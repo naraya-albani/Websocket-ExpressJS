@@ -21,13 +21,17 @@ model User {
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
-  messages Message[]
+  sentMessages     Message[] @relation("SentMessages")
+  receivedMessages Message[] @relation("ReceivedMessages")
 }
 
 model Message {
-  id        String   @id @default(uuid())
-  content   String
-  senderId  String
-  sender    User     @relation(fields: [senderId], references: [id])
-  createdAt DateTime @default(now())
+  id          String   @id @default(uuid())
+  content     String
+  senderId    String
+  recipientId String
+  createdAt   DateTime @default(now())
+
+  sender    User @relation("SentMessages", fields: [senderId], references: [id])
+  recipient User @relation("ReceivedMessages", fields: [recipientId], references: [id])
 }
