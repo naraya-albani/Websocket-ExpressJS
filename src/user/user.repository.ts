@@ -2,11 +2,13 @@ import prisma from "../lib/prisma";
 
 export class UserRepository {
   async findById(id: string) {
-    return prisma.user.findUnique({ where: { id } });
+    return prisma.user.findUnique({ where: { id }, omit: { password: true } });
   }
 
   async findByEmail(email: string) {
-    return prisma.user.findUnique({ where: { email } });
+    return prisma.user.findUnique({
+      where: { email },
+    });
   }
 
   async create(data: { email: string; name: string; password: string }) {
@@ -14,6 +16,9 @@ export class UserRepository {
   }
 
   async findAll() {
-    return prisma.user.findMany({ where: { deletedAt: null } });
+    return prisma.user.findMany({
+      where: { deletedAt: null },
+      omit: { password: true },
+    });
   }
 }

@@ -32,9 +32,28 @@ router.get("/:id", async (req: Request, res: Response) => {
 router.post("/", async (req: Request, res: Response) => {
   try {
     const user = await userService.createUser(req.body);
-    res.status(201).json(user);
+    const { password: _, ...safeUser } = user;
+    res.status(201).json(safeUser);
   } catch (err) {
     res.status(400).json({ message: (err as Error).message });
+  }
+});
+
+router.post("/login", async (req: Request, res: Response) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      res.status(400).json({ message: "Email dan password wajib diisi" });
+      return;
+    }
+
+    const user = await userService.validatePassword(email, password);
+
+    const { password: _, ...safeUser } = user;
+    res.json(safeUser);
+  } catch (err) {
+    res.status(401).json({ message: (err as Error).message });
   }
 });
 
