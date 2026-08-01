@@ -1,0 +1,41 @@
+import { Router, type Request, type Response } from "express";
+import { UserService } from "./user.service";
+
+const router = Router();
+const userService = new UserService();
+
+router.get("/", async (req: Request, res: Response) => {
+  try {
+    const users = await userService.getAllUsers();
+    res.json(users);
+  } catch (err) {
+    res.status(500).json({ message: (err as Error).message });
+  }
+});
+
+router.get("/:id", async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    if (!id || typeof id !== "string") {
+      res.status(400).json({ message: "ID tidak valid" });
+      return;
+    }
+
+    const user = await userService.getUserById(id);
+    res.json(user);
+  } catch (err) {
+    res.status(404).json({ message: (err as Error).message });
+  }
+});
+
+router.post("/", async (req: Request, res: Response) => {
+  try {
+    const user = await userService.createUser(req.body);
+    res.status(201).json(user);
+  } catch (err) {
+    res.status(400).json({ message: (err as Error).message });
+  }
+});
+
+export default router;

@@ -17,7 +17,10 @@
     "typescript": "^7.0.2"
   },
   "dependencies": {
+    "@prisma/adapter-pg": "^7.9.1",
+    "@prisma/client": "^7.9.1",
     "express": "^5.2.1",
-    "prisma": "^7.9.1"
+    "prisma": "^7.9.1",
+    "socket.io": "^4.8.3"
   }
 }
