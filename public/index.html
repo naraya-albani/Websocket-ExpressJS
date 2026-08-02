@@ -888,9 +888,9 @@
           });
           return;
         }
-        // getConversation() mengembalikan urutan terbaru -> terlama (desc),
-        // balik dulu supaya pesan lama tampil di atas seperti chat pada umumnya
-        history.slice().forEach((m) => {
+        // ChatService.getConversation() di backend sudah mengembalikan urutan
+        // lama -> baru, jadi di sini tinggal render apa adanya (jangan reverse lagi)
+        history.forEach((m) => {
           const senderId = m.senderId ?? m.sender_id;
           const content = m.content ?? m.message ?? "";
           const createdAt = m.createdAt ?? m.created_at;

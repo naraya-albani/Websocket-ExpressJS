@@ -15,29 +15,20 @@ export class ChatRepository {
     });
   }
 
-  async getConversation(userA: string, userB: string, limit = 50) {
+  async getMessages(userId: string, withUserId?: string, limit?: number) {
     return prisma.message.findMany({
-      where: {
-        OR: [
-          { senderId: userA, recipientId: userB },
-          { senderId: userB, recipientId: userA },
-        ],
-      },
+      where: withUserId
+        ? {
+            OR: [
+              { senderId: userId, recipientId: withUserId },
+              { senderId: withUserId, recipientId: userId },
+            ],
+          }
+        : {
+            OR: [{ senderId: userId }, { recipientId: userId }],
+          },
       orderBy: { createdAt: "desc" },
       take: limit,
-      include: {
-        sender: { select: { id: true, name: true, email: true } },
-        recipient: { select: { id: true, name: true, email: true } },
-      },
-    });
-  }
-
-  async getMessagesInvolvingUser(userId: string) {
-    return prisma.message.findMany({
-      where: {
-        OR: [{ senderId: userId }, { recipientId: userId }],
-      },
-      orderBy: { createdAt: "desc" },
       include: {
         sender: { select: { id: true, name: true, email: true } },
         recipient: { select: { id: true, name: true, email: true } },

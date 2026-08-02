@@ -13,16 +13,13 @@ export class ChatService {
   }
 
   async getConversation(userA: string, userB: string, limit?: number) {
-    const messages = await this.chatRepository.getConversation(
-      userA,
-      userB,
-      limit,
-    );
+    const messages = await this.chatRepository.getMessages(userA, userB, limit);
     return messages.reverse();
   }
 
   async getContacts(userId: string) {
-    const messages = await this.chatRepository.getMessagesInvolvingUser(userId);
+    const messages = await this.chatRepository.getMessages(userId);
+
     const contactsMap = new Map<
       string,
       {
