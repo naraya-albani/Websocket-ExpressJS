@@ -13,6 +13,22 @@ router.get("/", async (req: Request, res: Response) => {
   }
 });
 
+router.get("/search", async (req: Request, res: Response) => {
+  try {
+    const { q } = req.query;
+
+    if (!q || typeof q !== "string") {
+      res.status(400).json({ message: "Query pencarian (q) wajib diisi" });
+      return;
+    }
+
+    const users = await userService.searchUsers(q);
+    res.json(users);
+  } catch (err) {
+    res.status(500).json({ message: (err as Error).message });
+  }
+});
+
 router.get("/:id", async (req: Request, res: Response) => {
   try {
     const { id } = req.params;

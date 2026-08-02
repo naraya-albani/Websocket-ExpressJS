@@ -1,0 +1,937 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chat</title>
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <style>
+      :root {
+        --bg: #12161c;
+        --panel: #1a1f27;
+        --panel-2: #212832;
+        --panel-3: #262e39;
+        --border: #2a323d;
+        --text: #e7ebf0;
+        --text-dim: #8b95a3;
+        --accent: #4d8dff;
+        --danger: #ff5d6c;
+        --success: #3ecf7d;
+        --radius: 10px;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: var(--bg);
+        color: var(--text);
+        font-family:
+          "Inter",
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          sans-serif;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+      }
+
+      /* ---------- Layar Auth ---------- */
+      #authScreen {
+        width: 360px;
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 28px;
+      }
+
+      #authScreen h1 {
+        font-size: 18px;
+        margin: 0 0 4px;
+        letter-spacing: -0.01em;
+      }
+
+      #authScreen p.sub {
+        margin: 0 0 20px;
+        font-size: 13px;
+        color: var(--text-dim);
+      }
+
+      .tabs {
+        display: flex;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        overflow: hidden;
+        margin-bottom: 20px;
+      }
+
+      .tab {
+        flex: 1;
+        text-align: center;
+        padding: 9px 0;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        background: var(--panel-2);
+        color: var(--text-dim);
+      }
+
+      .tab.active {
+        background: var(--accent);
+        color: white;
+      }
+
+      .field {
+        margin-bottom: 14px;
+      }
+
+      .field label {
+        display: block;
+        font-size: 12px;
+        color: var(--text-dim);
+        margin-bottom: 6px;
+      }
+
+      .field input {
+        width: 100%;
+        padding: 10px 12px;
+        background: var(--panel-2);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        color: var(--text);
+        font-size: 14px;
+        outline: none;
+      }
+
+      .field input:focus {
+        border-color: var(--accent);
+      }
+
+      button.primary {
+        width: 100%;
+        padding: 11px;
+        margin-top: 6px;
+        background: var(--accent);
+        border: none;
+        border-radius: 8px;
+        color: white;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      button.primary:hover {
+        filter: brightness(1.08);
+      }
+      button.primary:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .form-error {
+        color: var(--danger);
+        font-size: 12px;
+        margin-top: 10px;
+        min-height: 14px;
+      }
+
+      .auth-form {
+        display: none;
+      }
+      .auth-form.active {
+        display: block;
+      }
+
+      /* ---------- Layar Utama (App) ---------- */
+      #appScreen {
+        display: none;
+        width: 780px;
+        height: 640px;
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        overflow: hidden;
+      }
+
+      #appLayout {
+        display: flex;
+        height: 100%;
+      }
+
+      /* Sidebar */
+      #sidebar {
+        width: 280px;
+        border-right: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+        background: var(--panel-2);
+      }
+
+      #sidebarHeader {
+        padding: 14px 16px;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      #meInfo .name {
+        font-size: 13.5px;
+        font-weight: 600;
+      }
+      #meInfo .email {
+        font-size: 11px;
+        color: var(--text-dim);
+      }
+
+      #logoutBtn {
+        background: none;
+        border: 1px solid var(--border);
+        color: var(--text-dim);
+        font-size: 11px;
+        padding: 5px 9px;
+        border-radius: 6px;
+        cursor: pointer;
+      }
+      #logoutBtn:hover {
+        color: var(--text);
+        border-color: var(--text-dim);
+      }
+
+      #searchWrap {
+        padding: 12px 14px;
+        border-bottom: 1px solid var(--border);
+      }
+
+      #searchInput {
+        width: 100%;
+        padding: 8px 10px;
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        color: var(--text);
+        font-size: 13px;
+        outline: none;
+      }
+      #searchInput:focus {
+        border-color: var(--accent);
+      }
+
+      #listArea {
+        flex: 1;
+        overflow-y: auto;
+      }
+
+      #listArea::-webkit-scrollbar {
+        width: 6px;
+      }
+      #listArea::-webkit-scrollbar-thumb {
+        background: var(--border);
+        border-radius: 3px;
+      }
+
+      .list-label {
+        padding: 10px 16px 4px;
+        font-size: 10.5px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: var(--text-dim);
+      }
+
+      .list-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 9px 16px;
+        cursor: pointer;
+      }
+
+      .list-item:hover {
+        background: var(--panel-3);
+      }
+      .list-item.active {
+        background: var(--panel-3);
+      }
+
+      .avatar {
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        background: var(--accent);
+        color: white;
+        font-size: 13px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+
+      .list-item .info {
+        min-width: 0;
+        flex: 1;
+      }
+
+      .list-item .info .name {
+        font-size: 13px;
+        font-weight: 600;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .list-item .info .preview {
+        font-size: 11.5px;
+        color: var(--text-dim);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .empty-hint {
+        padding: 16px;
+        font-size: 12px;
+        color: var(--text-dim);
+        text-align: center;
+      }
+
+      /* Chat panel */
+      #chatPanel {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+      }
+
+      #chatHeader {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 14px 16px;
+        border-bottom: 1px solid var(--border);
+      }
+
+      #statusDot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--danger);
+        flex-shrink: 0;
+      }
+      #statusDot.connected {
+        background: var(--success);
+      }
+
+      #chatHeader .name {
+        font-size: 14px;
+        font-weight: 600;
+      }
+
+      #messages {
+        flex: 1;
+        overflow-y: auto;
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      #messages::-webkit-scrollbar {
+        width: 6px;
+      }
+      #messages::-webkit-scrollbar-thumb {
+        background: var(--border);
+        border-radius: 3px;
+      }
+
+      .bubble {
+        max-width: 70%;
+        padding: 9px 12px;
+        border-radius: 14px;
+        font-size: 13.5px;
+        line-height: 1.4;
+        word-wrap: break-word;
+      }
+
+      .bubble.mine {
+        align-self: flex-end;
+        background: var(--accent);
+        color: white;
+        border-bottom-right-radius: 4px;
+      }
+
+      .bubble.theirs {
+        align-self: flex-start;
+        background: var(--panel-2);
+        border: 1px solid var(--border);
+        border-bottom-left-radius: 4px;
+      }
+
+      .bubble.system {
+        align-self: center;
+        background: transparent;
+        color: var(--text-dim);
+        font-size: 12px;
+        font-style: italic;
+      }
+
+      .bubble .meta {
+        display: block;
+        font-size: 10px;
+        opacity: 0.65;
+        margin-top: 3px;
+      }
+
+      #placeholderState {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-dim);
+        font-size: 13px;
+        text-align: center;
+        padding: 20px;
+      }
+
+      #inputBar {
+        display: none;
+        gap: 8px;
+        padding: 12px;
+        border-top: 1px solid var(--border);
+        background: var(--panel-2);
+      }
+
+      #msgInput {
+        flex: 1;
+        padding: 10px 12px;
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        color: var(--text);
+        font-size: 13.5px;
+        outline: none;
+      }
+      #msgInput:focus {
+        border-color: var(--accent);
+      }
+
+      #sendBtn {
+        background: var(--accent);
+        border: none;
+        color: white;
+        padding: 0 16px;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      #sendBtn:hover {
+        filter: brightness(1.08);
+      }
+    </style>
+  </head>
+  <body>
+    <!-- ===== Layar Auth ===== -->
+    <div id="authScreen">
+      <h1>Selamat datang</h1>
+      <p class="sub">Masuk atau buat akun untuk mulai chat.</p>
+
+      <div class="tabs">
+        <div class="tab active" id="tabLogin">Login</div>
+        <div class="tab" id="tabRegister">Daftar</div>
+      </div>
+
+      <!-- Form Login -->
+      <div class="auth-form active" id="loginForm">
+        <div class="field">
+          <label for="loginEmail">Email</label>
+          <input id="loginEmail" type="email" placeholder="kamu@email.com" />
+        </div>
+        <div class="field">
+          <label for="loginPassword">Password</label>
+          <input id="loginPassword" type="password" placeholder="••••••••" />
+        </div>
+        <button class="primary" id="loginBtn">Masuk</button>
+        <div class="form-error" id="loginError"></div>
+      </div>
+
+      <!-- Form Register -->
+      <div class="auth-form" id="registerForm">
+        <div class="field">
+          <label for="regName">Nama</label>
+          <input id="regName" type="text" placeholder="Nama lengkap" />
+        </div>
+        <div class="field">
+          <label for="regEmail">Email</label>
+          <input id="regEmail" type="email" placeholder="kamu@email.com" />
+        </div>
+        <div class="field">
+          <label for="regPassword">Password</label>
+          <input id="regPassword" type="password" placeholder="••••••••" />
+        </div>
+        <button class="primary" id="registerBtn">Daftar</button>
+        <div class="form-error" id="registerError"></div>
+      </div>
+    </div>
+
+    <!-- ===== Layar Utama ===== -->
+    <div id="appScreen">
+      <div id="appLayout">
+        <!-- Sidebar -->
+        <div id="sidebar">
+          <div id="sidebarHeader">
+            <div id="meInfo">
+              <div class="name" id="meName">-</div>
+              <div class="email" id="meEmail">-</div>
+            </div>
+            <button id="logoutBtn">Keluar</button>
+          </div>
+
+          <div id="searchWrap">
+            <input
+              id="searchInput"
+              type="text"
+              placeholder="Cari nama atau email..."
+            />
+          </div>
+
+          <div id="listArea">
+            <div id="searchResults" style="display: none">
+              <div class="list-label">Hasil pencarian</div>
+              <div id="searchResultsList"></div>
+            </div>
+            <div id="contactsSection">
+              <div class="list-label">Obrolan</div>
+              <div id="contactsList"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Chat panel -->
+        <div id="chatPanel">
+          <div id="placeholderState">
+            Pilih kontak atau cari user untuk mulai chat
+          </div>
+
+          <div id="chatHeader" style="display: none">
+            <span id="statusDot"></span>
+            <span class="name" id="targetLabel">-</span>
+          </div>
+          <div id="messages" style="display: none"></div>
+          <div id="inputBar">
+            <input id="msgInput" type="text" placeholder="Ketik pesan..." />
+            <button id="sendBtn">Kirim</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Ganti sesuai alamat server kamu jika halaman ini tidak di-serve dari server yang sama
+      const API_BASE = window.location.origin;
+      const SOCKET_URL = window.location.origin;
+
+      let me = null; // { id, name, email }
+      let socket = null;
+      let activeTargetId = null;
+      let contacts = []; // daftar kontak dari /chat/contacts/:userId
+
+      // ---------- Elemen ----------
+      const authScreen = document.getElementById("authScreen");
+      const appScreen = document.getElementById("appScreen");
+
+      const tabLogin = document.getElementById("tabLogin");
+      const tabRegister = document.getElementById("tabRegister");
+      const loginForm = document.getElementById("loginForm");
+      const registerForm = document.getElementById("registerForm");
+
+      const loginEmail = document.getElementById("loginEmail");
+      const loginPassword = document.getElementById("loginPassword");
+      const loginBtn = document.getElementById("loginBtn");
+      const loginError = document.getElementById("loginError");
+
+      const regName = document.getElementById("regName");
+      const regEmail = document.getElementById("regEmail");
+      const regPassword = document.getElementById("regPassword");
+      const registerBtn = document.getElementById("registerBtn");
+      const registerError = document.getElementById("registerError");
+
+      const meName = document.getElementById("meName");
+      const meEmail = document.getElementById("meEmail");
+      const logoutBtn = document.getElementById("logoutBtn");
+
+      const searchInput = document.getElementById("searchInput");
+      const searchResults = document.getElementById("searchResults");
+      const searchResultsList = document.getElementById("searchResultsList");
+      const contactsList = document.getElementById("contactsList");
+
+      const placeholderState = document.getElementById("placeholderState");
+      const chatHeader = document.getElementById("chatHeader");
+      const statusDot = document.getElementById("statusDot");
+      const targetLabel = document.getElementById("targetLabel");
+      const messagesEl = document.getElementById("messages");
+      const inputBar = document.getElementById("inputBar");
+      const msgInput = document.getElementById("msgInput");
+      const sendBtn = document.getElementById("sendBtn");
+
+      // ---------- Util ----------
+      function escapeHtml(str) {
+        const div = document.createElement("div");
+        div.textContent = str;
+        return div.innerHTML;
+      }
+
+      function initials(name) {
+        if (!name) return "?";
+        return name
+          .trim()
+          .split(/\s+/)
+          .slice(0, 2)
+          .map((w) => w[0]?.toUpperCase())
+          .join("");
+      }
+
+      async function api(path, options = {}) {
+        const res = await fetch(API_BASE + path, {
+          headers: { "Content-Type": "application/json" },
+          ...options,
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.message || "Terjadi kesalahan");
+        return data;
+      }
+
+      // ---------- Tab Auth ----------
+      tabLogin.addEventListener("click", () => {
+        tabLogin.classList.add("active");
+        tabRegister.classList.remove("active");
+        loginForm.classList.add("active");
+        registerForm.classList.remove("active");
+      });
+
+      tabRegister.addEventListener("click", () => {
+        tabRegister.classList.add("active");
+        tabLogin.classList.remove("active");
+        registerForm.classList.add("active");
+        loginForm.classList.remove("active");
+      });
+
+      // ---------- Login ----------
+      loginBtn.addEventListener("click", async () => {
+        loginError.textContent = "";
+        const email = loginEmail.value.trim();
+        const password = loginPassword.value;
+
+        if (!email || !password) {
+          loginError.textContent = "Email dan password wajib diisi.";
+          return;
+        }
+
+        loginBtn.disabled = true;
+        try {
+          const user = await api("/users/login", {
+            method: "POST",
+            body: JSON.stringify({ email, password }),
+          });
+          enterApp(user);
+        } catch (err) {
+          loginError.textContent = err.message;
+        } finally {
+          loginBtn.disabled = false;
+        }
+      });
+
+      // ---------- Register ----------
+      registerBtn.addEventListener("click", async () => {
+        registerError.textContent = "";
+        const name = regName.value.trim();
+        const email = regEmail.value.trim();
+        const password = regPassword.value;
+
+        if (!name || !email || !password) {
+          registerError.textContent = "Semua field wajib diisi.";
+          return;
+        }
+
+        registerBtn.disabled = true;
+        try {
+          const user = await api("/users", {
+            method: "POST",
+            body: JSON.stringify({ name, email, password }),
+          });
+          enterApp(user);
+        } catch (err) {
+          registerError.textContent = err.message;
+        } finally {
+          registerBtn.disabled = false;
+        }
+      });
+
+      // ---------- Masuk ke App ----------
+      function enterApp(user) {
+        me = user;
+        authScreen.style.display = "none";
+        appScreen.style.display = "block";
+        meName.textContent = me.name;
+        meEmail.textContent = me.email;
+
+        connectSocket();
+        loadContacts();
+      }
+
+      function logout() {
+        if (socket) {
+          socket.disconnect();
+          socket = null;
+        }
+        me = null;
+        activeTargetId = null;
+        contacts = [];
+
+        appScreen.style.display = "none";
+        authScreen.style.display = "block";
+        loginEmail.value = "";
+        loginPassword.value = "";
+        resetChatPanel();
+      }
+
+      logoutBtn.addEventListener("click", logout);
+
+      function resetChatPanel() {
+        placeholderState.style.display = "flex";
+        chatHeader.style.display = "none";
+        messagesEl.style.display = "none";
+        inputBar.style.display = "none";
+        messagesEl.innerHTML = "";
+      }
+
+      // ---------- Socket ----------
+      function connectSocket() {
+        socket = io(SOCKET_URL);
+
+        socket.on("connect", () => {
+          statusDot.classList.add("connected");
+          socket.emit("chat:join", { userId: me.id });
+        });
+
+        socket.on("disconnect", () => {
+          statusDot.classList.remove("connected");
+        });
+
+        socket.on("chat:history", (history) => {
+          renderHistory(history);
+        });
+
+        socket.on("chat:message", (message) => {
+          const senderId = message.senderId ?? message.sender_id;
+          const content = message.content ?? message.message ?? "";
+          const createdAt =
+            message.createdAt ?? message.created_at ?? Date.now();
+
+          // Update pratinjau kontak
+          upsertContactPreview(
+            senderId === me.id ? message.recipientId : senderId,
+            content,
+            createdAt,
+          );
+
+          // Tampilkan bubble hanya kalau percakapan yang sedang dibuka relevan
+          if (
+            activeTargetId &&
+            (senderId === activeTargetId || senderId === me.id)
+          ) {
+            if (senderId === me.id && message.recipientId !== activeTargetId)
+              return;
+            addBubble({
+              text: content,
+              kind: senderId === me.id ? "mine" : "theirs",
+              time: createdAt,
+            });
+          }
+        });
+
+        socket.on("chat:error", (err) => {
+          addBubble({
+            text: "Error: " + (err?.message ?? "Terjadi kesalahan"),
+            kind: "system",
+          });
+        });
+      }
+
+      // ---------- Kontak ----------
+      async function loadContacts() {
+        try {
+          contacts = await api(`/chat/contacts/${me.id}`);
+          renderContacts();
+        } catch (err) {
+          contactsList.innerHTML = `<div class="empty-hint">Gagal memuat kontak</div>`;
+        }
+      }
+
+      function renderContacts() {
+        if (!contacts.length) {
+          contactsList.innerHTML = `<div class="empty-hint">Belum ada obrolan. Cari user untuk mulai chat.</div>`;
+          return;
+        }
+        contactsList.innerHTML = "";
+        contacts
+          .slice()
+          .sort((a, b) => new Date(b.lastMessageAt) - new Date(a.lastMessageAt))
+          .forEach((c) =>
+            contactsList.appendChild(buildListItem(c, c.lastMessage)),
+          );
+        highlightActiveItem();
+      }
+
+      function upsertContactPreview(otherUserId, lastMessage, lastMessageAt) {
+        const existing = contacts.find((c) => c.id === otherUserId);
+        if (existing) {
+          existing.lastMessage = lastMessage;
+          existing.lastMessageAt = lastMessageAt;
+          renderContacts();
+        } else {
+          // Kalau kontak baru (belum pernah chat sebelumnya), reload dari server
+          // supaya dapat nama & email lengkap.
+          loadContacts();
+        }
+      }
+
+      function buildListItem(user, preview) {
+        const el = document.createElement("div");
+        el.className = "list-item";
+        el.dataset.userId = user.id;
+        el.innerHTML = `
+      <div class="avatar">${initials(user.name)}</div>
+      <div class="info">
+        <div class="name">${escapeHtml(user.name)}</div>
+        <div class="preview">${preview ? escapeHtml(preview) : escapeHtml(user.email)}</div>
+      </div>
+    `;
+        el.addEventListener("click", () => openChat(user));
+        return el;
+      }
+
+      function highlightActiveItem() {
+        document.querySelectorAll(".list-item").forEach((el) => {
+          el.classList.toggle("active", el.dataset.userId === activeTargetId);
+        });
+      }
+
+      // ---------- Search ----------
+      let searchDebounce = null;
+      searchInput.addEventListener("input", () => {
+        const q = searchInput.value.trim();
+        clearTimeout(searchDebounce);
+
+        if (!q) {
+          searchResults.style.display = "none";
+          return;
+        }
+
+        searchDebounce = setTimeout(async () => {
+          try {
+            const results = await api(
+              `/users/search?q=${encodeURIComponent(q)}`,
+            );
+            const filtered = results.filter((u) => u.id !== me.id);
+
+            searchResults.style.display = "block";
+            searchResultsList.innerHTML = "";
+
+            if (!filtered.length) {
+              searchResultsList.innerHTML = `<div class="empty-hint">Tidak ada user ditemukan</div>`;
+              return;
+            }
+
+            filtered.forEach((u) =>
+              searchResultsList.appendChild(buildListItem(u, u.email)),
+            );
+          } catch (err) {
+            searchResultsList.innerHTML = `<div class="empty-hint">Gagal mencari user</div>`;
+          }
+        }, 300);
+      });
+
+      // ---------- Buka Chat ----------
+      function openChat(user) {
+        activeTargetId = user.id;
+        searchInput.value = "";
+        searchResults.style.display = "none";
+
+        placeholderState.style.display = "none";
+        chatHeader.style.display = "flex";
+        messagesEl.style.display = "flex";
+        inputBar.style.display = "flex";
+
+        targetLabel.textContent = user.name;
+        messagesEl.innerHTML = "";
+        highlightActiveItem();
+
+        if (socket && socket.connected) {
+          socket.emit("chat:history", { withUserId: user.id });
+        }
+
+        msgInput.focus();
+      }
+
+      function renderHistory(history) {
+        messagesEl.innerHTML = "";
+        if (!history || history.length === 0) {
+          addBubble({
+            text: "Belum ada pesan. Mulai obrolan!",
+            kind: "system",
+          });
+          return;
+        }
+        // getConversation() mengembalikan urutan terbaru -> terlama (desc),
+        // balik dulu supaya pesan lama tampil di atas seperti chat pada umumnya
+        history.slice().forEach((m) => {
+          const senderId = m.senderId ?? m.sender_id;
+          const content = m.content ?? m.message ?? "";
+          const createdAt = m.createdAt ?? m.created_at;
+          addBubble({
+            text: content,
+            kind: senderId === me.id ? "mine" : "theirs",
+            time: createdAt,
+          });
+        });
+      }
+
+      function addBubble({ text, kind, time }) {
+        const el = document.createElement("div");
+        el.className = "bubble " + kind;
+        const timeStr = time
+          ? new Date(time).toLocaleTimeString("id-ID", {
+              hour: "2-digit",
+              minute: "2-digit",
+            })
+          : "";
+        el.innerHTML = `${escapeHtml(text)}${timeStr ? `<span class="meta">${timeStr}</span>` : ""}`;
+        messagesEl.appendChild(el);
+        messagesEl.scrollTop = messagesEl.scrollHeight;
+      }
+
+      // ---------- Kirim Pesan ----------
+      function sendMessage() {
+        const text = msgInput.value.trim();
+        if (!text || !socket || !activeTargetId) return;
+
+        socket.emit("chat:message", {
+          recipientId: activeTargetId,
+          content: text,
+        });
+        msgInput.value = "";
+      }
+
+      sendBtn.addEventListener("click", sendMessage);
+      msgInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") sendMessage();
+      });
+    </script>
+  </body>
+</html>

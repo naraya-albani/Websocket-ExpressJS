@@ -9,10 +9,6 @@ const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
 
-app.get("/", (req: Request, res: Response) => {
-  res.send("Hello from Express!");
-});
-
 app.use("/users", userController);
 app.use("/chat", chatController);
 
@@ -26,3 +22,5 @@ registerChatSocket(io);
 server.listen(PORT, () => {
   console.log(`Server jalan di http://localhost:${PORT}`);
 });
+
+app.use(express.static("public"));

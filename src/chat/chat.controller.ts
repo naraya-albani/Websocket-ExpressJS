@@ -27,6 +27,23 @@ router.get("/messages", async (req: Request, res: Response) => {
   }
 });
 
+// REST endpoint: daftar kontak (orang yang pernah chat) untuk seorang user
+router.get("/contacts/:userId", async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.params;
+
+    if (!userId || typeof userId !== "string") {
+      res.status(400).json({ message: "userId wajib diisi" });
+      return;
+    }
+
+    const contacts = await chatService.getContacts(userId);
+    res.json(contacts);
+  } catch (err) {
+    res.status(500).json({ message: (err as Error).message });
+  }
+});
+
 // Registrasi event socket.io untuk fitur chat real-time
 export function registerChatSocket(io: Server) {
   io.on("connection", (socket: Socket) => {

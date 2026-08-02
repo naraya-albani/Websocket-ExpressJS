@@ -39,4 +39,17 @@ export class ChatRepository {
       },
     });
   }
+
+  async getMessagesInvolvingUser(userId: string) {
+    return prisma.message.findMany({
+      where: {
+        OR: [{ senderId: userId }, { recipientId: userId }],
+      },
+      orderBy: { createdAt: "desc" },
+      include: {
+        sender: { select: { id: true, name: true, email: true } },
+        recipient: { select: { id: true, name: true, email: true } },
+      },
+    });
+  }
 }

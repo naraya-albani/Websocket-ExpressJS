@@ -37,4 +37,9 @@ export class UserService {
 
     return user;
   }
+
+  async searchUsers(query: string) {
+    if (!query || query.trim().length === 0) return [];
+    return this.userRepository.search(query.trim());
+  }
 }

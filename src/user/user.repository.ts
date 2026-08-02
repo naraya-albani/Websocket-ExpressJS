@@ -21,4 +21,18 @@ export class UserRepository {
       omit: { password: true },
     });
   }
+
+  async search(query: string) {
+    return prisma.user.findMany({
+      where: {
+        deletedAt: null,
+        OR: [
+          { name: { contains: query, mode: "insensitive" } },
+          { email: { contains: query, mode: "insensitive" } },
+        ],
+      },
+      omit: { password: true },
+      take: 20,
+    });
+  }
 }
