@@ -15,14 +15,6 @@ export class ChatRepository {
     });
   }
 
-  async getMessages(limit = 50) {
-    return prisma.message.findMany({
-      orderBy: { createdAt: "desc" },
-      take: limit,
-      include: { sender: { select: { id: true, name: true, email: true } } },
-    });
-  }
-
   async getConversation(userA: string, userB: string, limit = 50) {
     return prisma.message.findMany({
       where: {

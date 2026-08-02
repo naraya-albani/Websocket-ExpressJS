@@ -12,11 +12,6 @@ export class ChatService {
     });
   }
 
-  async getRecentMessages(limit?: number) {
-    const messages = await this.chatRepository.getMessages(limit);
-    return messages.reverse(); // urutkan dari lama ke baru
-  }
-
   async getConversation(userA: string, userB: string, limit?: number) {
     const messages = await this.chatRepository.getConversation(
       userA,
